@@ -84,7 +84,8 @@ pokemon_data <- tibble(
   def = numeric(1351),
   spatk = numeric(1351),
   spdef = numeric(1351),
-  spd = numeric(1351)
+  spd = numeric(1351),
+  bst = numeric(1351)
 )
 
 for (i in 1:10) {
@@ -93,12 +94,17 @@ for (i in 1:10) {
 
   pokemon_response <- GET(url)
   details <- content(pokemon_response, "parse")
+  
+ pokemon_data$type1[i] <- details$types[[1]]$type$name
+ 
+ if(length(details$types) >= 2)
+   {pokemon_data$type2[i] <- details$types[[2]]$type$name}
+ else
+   {pokemon_data$type2[i] <- NA}
 
   pokemon_data$name[i] <- details$name
   pokemon_data$height[i] <- details$height
   pokemon_data$weight[i] <- details$weight
-  pokemon_data$type1[i] <- details$types[[1]][[2]]
-  pokemon_data$type2[i] <- details$types[[2]][[2]]
   pokemon_data$abilities[i] <- details$abilities
   pokemon_data$hp[i] <- details$stats[[1]]
   pokemon_data$atk[i] <- details$stats[[2]]
@@ -106,8 +112,13 @@ for (i in 1:10) {
   pokemon_data$spatk[i] <- details$stats[[4]]
   pokemon_data$spdef[i] <- details$stats[[5]]
   pokemon_data$spd[i] <- details$stats[[6]]
+  pokemon_data$bst[i] <- pokemon_data$hp[i][[1]] + pokemon_data$atk[i][[1]] + pokemon_data$def[i][[1]] + pokemon_data$spatk[i][[1]] + pokemon_data$spdef[i][[1]] + pokemon_data$spd[i][[1]]
+
 }
 
-pokemon_data
+```
+
+```{r}
+
 ```
 
