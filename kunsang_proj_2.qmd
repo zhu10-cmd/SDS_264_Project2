@@ -1,27 +1,113 @@
 ---
 title: "Kunsang_Proj_2"
 author: "Namgyal Kunsang"
-format: html
-editor: visual
+format:
+  html: default
+editor_options: 
+  chunk_output_type: console
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+#| include: FALSE
+
+library(tidyverse)
+library(rvest)
+library(polite)
+library(httr2)
+library(httr)
 ```
 
-You can add options to executable code like this
-
 ```{r}
-#| echo: false
-2 * 2
+# check that scraping is allowed (Step 0)
+robotstxt::paths_allowed("https://pokeapi.co/api/v2/pikachu")
+
+session <- bow(
+  "https://pokeapi.co/api/v2/pikachu", force = TRUE
+)
+
+poke_name <- scrape(session) |>
+  html_nodes(".JsonViewer-module__json--2OTYy > ul > li > ul > li:nth-child(2) label+ span") |>
+  html_text()
+poke_name
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+
+```{r}
+#| eval: FALSE
+
+# Create a vector of 5 movie names you want to study
+#  - must figure out pattern in URL for obtaining different movies
+
+api_key <- "pokemon?limit="
+
+# Set up empty tibble
+pkmn <- tibble(
+  Name = character(), 
+  Height = double(), 
+  Weight = double(),
+  Type = character(), 
+  Abilities = character(), 
+  Stats = character()
+)
+
+# Use for loop to run through API request process 5 times,
+#   each time filling the next row in the tibble
+#  - can do max of 1000 GETs per day
+for(i in 1:10) {
+  url <- str_c("https://pokeapi.co/api/v2/pokemon/", api_key, i)
+  Sys.sleep(0.5)
+  onepkmn <- GET(url)
+  details <- content(onepkmn, "parse")
+  pkmn[i,1] <- details$name
+  pkmn[i,2] <- details$height  
+  pkmn[i,3] <- details$weight  # genres (single string - could be more than one)
+  pkmn[i,4] <- details$type  # actors (single string - could be more than one)
+  pkmn[i,5] <- details$abilities  # metascore (be sure it is numeric)
+  pkmn[i,6] <- Stats  # imdb rating (be sure it is numeric)
+}
+
+pkmn
+```
+
+
+```{r}
+pokemon_data <- tibble(
+  name = character(1351),
+  height = numeric(1351),
+  weight = numeric(1351),
+  type1 = character(1351),
+  type2 = character(1351),
+  abilities = character(1351),
+  hp = numeric(1351),
+  atk = numeric(1351),
+  def = numeric(1351),
+  spatk = numeric(1351),
+  spdef = numeric(1351),
+  spd = numeric(1351)
+)
+
+for (i in 1:10) {
+
+  url <- str_c("https://pokeapi.co/api/v2/pokemon/", i)
+
+  pokemon_response <- GET(url)
+  details <- content(pokemon_response, "parse")
+
+  pokemon_data$name[i] <- details$name
+  pokemon_data$height[i] <- details$height
+  pokemon_data$weight[i] <- details$weight
+  pokemon_data$type1[i] <- details$types[[1]][[2]]
+  pokemon_data$type2[i] <- details$types[[2]][[2]]
+  pokemon_data$abilities[i] <- details$abilities
+  pokemon_data$hp[i] <- details$stats[[1]]
+  pokemon_data$atk[i] <- details$stats[[2]]
+  pokemon_data$def[i] <- details$stats[[3]]
+  pokemon_data$spatk[i] <- details$stats[[4]]
+  pokemon_data$spdef[i] <- details$stats[[5]]
+  pokemon_data$spd[i] <- details$stats[[6]]
+}
+
+pokemon_data
+```
+
