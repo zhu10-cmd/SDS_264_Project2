@@ -42,7 +42,8 @@ pokemon_data <- tibble(
   name = character(1351),
   height = numeric(1351),
   weight = numeric(1351),
-  types = character(1351),
+  type1 = character(1351),
+  type2 = character(1351),
   abilities = character(1351),
   stats = numeric(1351)
 )
@@ -53,6 +54,13 @@ for (i in 1:10) {
 
   pokemon_response <- GET(url)
   details <- content(pokemon_response, "parsed")
+  
+ pokemon_data$type1[i] <- details$types[[1]]$type$name
+ 
+ if(length(details$types) >= 2)
+   {pokemon_data$type2[i] <- details$types[[2]]$type$name}
+ else
+   {pokemon_data$type2[i] <- NA}
 
   pokemon_data$name[i] <- details$name
   pokemon_data$height[i] <- details$height
@@ -62,5 +70,8 @@ for (i in 1:10) {
   pokemon_data$stats[i] <- details$stats
 }
 
+pokemon_data
+
+details$types[[1]]$type$name
 ```
 
