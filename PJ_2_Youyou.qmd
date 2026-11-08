@@ -26,8 +26,41 @@ You can add options to executable code like this
 
 The `echo: false` option disables the printing of code (only output is displayed).
 
-```{r}
 
-print("hello world")
+## Project 2
+
+```{r}
+library(httr)
+library(stringr)
+library(tidyverse)
+```
+
+
+
+```{r}
+pokemon_data <- tibble(
+  name = character(1351),
+  height = numeric(1351),
+  weight = numeric(1351),
+  types = character(1351),
+  abilities = character(1351),
+  stats = numeric(1351)
+)
+
+for (i in 1:10) {
+
+  url <- str_c("https://pokeapi.co/api/v2/pokemon/", i)
+
+  pokemon_response <- GET(url)
+  details <- content(pokemon_response, "parsed")
+
+  pokemon_data$name[i] <- details$name
+  pokemon_data$height[i] <- details$height
+  pokemon_data$weight[i] <- details$weight
+  pokemon_data$types[i] <- details$types
+  pokemon_data$abilities[i] <- details$abilities
+  pokemon_data$stats[i] <- details$stats
+}
+
 ```
 
