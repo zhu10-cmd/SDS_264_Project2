@@ -1,5 +1,5 @@
 ---
-title: "Mini Project2 Stage 3"
+title: "Mini Project 2: Stage 3"
 format: html
 editor: visual
 author: "Geyouyou Zhu & Namgyal Kunsang"
@@ -8,6 +8,7 @@ author: "Geyouyou Zhu & Namgyal Kunsang"
 The `echo: false` option disables the printing of code (only output is displayed).
 
 ## Project 2
+
 ```{r}
 library(httr)
 library(stringr)
@@ -20,8 +21,8 @@ library(httr2)
 library(httr)
 ```
 
-
 ## Data cleaning for question 1
+
 ```{r}
 #data cleaning
 #only pic the 151 pokemons from the first generation
@@ -73,7 +74,6 @@ for (i in 1:151) {
 pokemon_data
 
 ```
-
 
 ## Question 1: Is there a relationship between a Pokemon’s physical size, such as height and weight, and its battle strength?
 
@@ -127,7 +127,7 @@ plot_ly(data = pokemon_data,
    y = ~weight, 
    z = ~bst,
    size = 3,
-   main = "Height, Weight, and Bst",
+   main = "Height, Weight, and BST",
    xlab = "Height",
    ylab = "Weight",
    zlab = "BST",
@@ -135,12 +135,10 @@ plot_ly(data = pokemon_data,
 
 ```
 
-
 ```{r}
 #csv file for tibble used in question 1
 write_csv(pokemon_data, "pokemon_data.csv")
 ```
-
 
 ## Question 2: Can we make a tibble to compare the level of base stats among Pokemon of the same type?
 
@@ -158,7 +156,6 @@ set_values <- function(num, df){
 }
 ```
 
-
 ```{r}
 # Function that takes number input from 1-18, referring to type number
 
@@ -175,7 +172,9 @@ set_values <- function(num, df){
   
   num_data <- tibble(
     type_name = character(length(num_details$pokemon)), 
+    # Name of the pokemon type
     pokemon = character(length(num_details$pokemon)),   
+    # Name of pokemon
     hp = numeric(length(num_details$pokemon)),          
     atk = numeric(length(num_details$pokemon)),         
     def = numeric(length(num_details$pokemon)),        
@@ -231,30 +230,26 @@ set_values <- function(num, df){
 }
 ```
 
-
 ```{r}
 # Iterating through all 18 types, merging into one tibble
 all_types <- list_rbind(map(c(1:18), by_type))
 ```
-
 
 ```{r}
 # Summary data showing avg. stats per type in Kanto
 mean_all_types <- all_types |>
   group_by(type_name) |>
     summarize(
-      mean_atk = mean(atk),
-      mean_spatk = mean(spatk),
-      mean_def = mean(def),
-      mean_spdef = mean(spdef),
-      mean_spd = mean(spd),
-      mean_hp = mean(hp))
+      mean_atk = mean(atk),  # Avg attack across all pkmn
+      mean_spatk = mean(spatk), # Avg sp. atk 
+      mean_def = mean(def),    # Avg defense
+      mean_spdef = mean(spdef),  # Avg spdef
+      mean_spd = mean(spd),   # Avg speed
+      mean_hp = mean(hp))    # Avg Health Points 
 ```
-
 
 ```{r}
 #csv file for tibble used in question 1
 write_csv(all_types, "all_types.csv")
 write_csv(mean_all_types, "mean_all_types.csv")
 ```
-
