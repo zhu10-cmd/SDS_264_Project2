@@ -1,31 +1,260 @@
 ---
-title: "test_project2"
+title: "Mini Project2 Stage 3"
 format: html
 editor: visual
+author: "Geyouyou Zhu & Namgyal Kunsang"
 ---
-
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
 
 The `echo: false` option disables the printing of code (only output is displayed).
 
+## Project 2
 ```{r}
-print("hello world")
+library(httr)
+library(stringr)
+library(tidyverse)
+library(plotly)
+library(readr)
+library(rvest)
+library(polite)
+library(httr2)
+library(httr)
+```
+
+
+## Data cleaning for question 1
+```{r}
+#data cleaning
+#only pic the 151 pokemons from the first generation
+pokemon_data <- tibble(
+  name = character(151),    # Pokemon's name
+  height = numeric(151),    # height
+  weight = numeric(151),    # weight
+  type1 = character(151),   # first type
+  type2 = character(151),   # second type (if applicable)
+  hp = numeric(151),        # health
+  atk = numeric(151),       # physical attack
+  def = numeric(151),       # physical defense
+  spatk = numeric(151),     # special attack
+  spdef = numeric(151),     # special defense
+  spd = numeric(151),       # speed
+  bst = numeric(151) )     # stat sum of hp through spd - batter strength
+
+for (i in 1:151) {
+  
+  url <- str_c("https://pokeapi.co/api/v2/pokemon/", i)
+
+  pokemon_response <- GET(url)
+  details <- content(pokemon_response, "parsed")
+  
+ pokemon_data$type1[i] <- details$types[[1]]$type$name
+ #if the Pokemon has one more type, that type will be put into type2 column
+ if(length(details$types) >= 2)
+   {pokemon_data$type2[i] <- details$types[[2]]$type$name}
+ else
+   #if no second type, the type2 column will be NA
+   {pokemon_data$type2[i] <- NA}
+
+  pokemon_data$name[i] <- details$name
+  pokemon_data$height[i] <- details$height
+  pokemon_data$weight[i] <- details$weight
+
+  #can maybe put in for loop
+  #drag out the detial information from states
+  pokemon_data$hp[[i]] <- details$stats[[1]]$base_stat
+  pokemon_data$atk[i] <- details$stats[[2]]$base_stat
+  pokemon_data$def[i] <- details$stats[[3]]$base_stat
+  pokemon_data$spatk[i] <- details$stats[[4]]$base_stat
+  pokemon_data$spdef[i] <- details$stats[[5]]$base_stat
+  pokemon_data$spd[i] <- details$stats[[6]]$base_stat
+  pokemon_data$bst[i] <- pokemon_data$hp[i][[1]] + pokemon_data$atk[i][[1]] + pokemon_data$def[i][[1]] + pokemon_data$spatk[i][[1]] + pokemon_data$spdef[i][[1]] + pokemon_data$spd[i][[1]]
+}
+
+
+pokemon_data
+
+```
+
+
+## Question 1: Is there a relationship between a Pokemon’s physical size, such as height and weight, and its battle strength?
+
+```{r}
+#height
+pokemon_data |>
+  ggplot(aes(x = height, y = bst)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(
+    title = "Relationship Between Pokemon Height and Battle Strength",
+    x = "Height",
+    y = "Base Stat Total (BST)"
+  ) +
+  theme_minimal() 
+
+#calculate the correlation
+cor(pokemon_data$height, pokemon_data$bst)
+
+
+#weight
+pokemon_data |>
+  ggplot(aes(x = weight, y = bst)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(
+    title = "Relationship Between Pokemon Weight and Battle Strength",
+    x = "Weight",
+    y = "Base Stat Total (BST)"
+  ) +
+  theme_minimal() 
+
+#calculate the correlation
+cor(pokemon_data$weight, pokemon_data$bst)
+
+#height and weight in the same chart, using color to show the bst
+pokemon_data |>
+  ggplot(aes(x = height, y = weight, color = bst)) +
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(name = "Battle Strength (BST)") +
+  labs(
+    title = "Pokemon Physical Size and Battle Strength",
+    x = "Height",
+    y = "Weight"
+  ) +
+  theme_minimal()
+
+#3D plot
+plot_ly(data = pokemon_data,
+    x = ~height, 
+   y = ~weight, 
+   z = ~bst,
+   size = 3,
+   main = "Height, Weight, and Bst",
+   xlab = "Height",
+   ylab = "Weight",
+   zlab = "BST",
+   type = "scatter3d")
+
+```
+
+
+```{r}
+#csv file for tibble used in question 1
+write_csv(pokemon_data, "pokemon_data.csv")
+```
+
+
+## Question 2: Can we make a tibble to compare the level of base stats among Pokemon of the same type?
+
+```{r}
+# Function to set rest of non-Kanto Pokemon's stats to NA values
+set_values <- function(num, df){
+  df$hp[num] <- NA
+  df$atk[num] <- NA
+  df$def[num] <- NA
+  df$spatk[num] <- NA
+  df$spdef[num] <- NA
+  df$spd[num] <- NA
+  df$bst[num] <- NA
+  return(df)
+}
+```
+
+
+```{r}
+# Function that takes number input from 1-18, referring to type number
+
+ by_type <- function(type_num) {
+   # Site link changes url based on type id number
+  num_url <- str_c("https://pokeapi.co/api/v2/type/", type_num)
+  num_response <- GET(num_url)
+  num_details <- content(num_response, "parse")
+  
+  #Create blank tibble to input values to 
+  # Through length of how many pokemon are in the type data
+  # This tells us how many rows to include in tibble
+  # makes computation easier for R.
+  
+  num_data <- tibble(
+    type_name = character(length(num_details$pokemon)), 
+    pokemon = character(length(num_details$pokemon)),   
+    hp = numeric(length(num_details$pokemon)),          
+    atk = numeric(length(num_details$pokemon)),         
+    def = numeric(length(num_details$pokemon)),        
+    spatk = numeric(length(num_details$pokemon)),      
+    spdef = numeric(length(num_details$pokemon)),      
+    spd = numeric(length(num_details$pokemon)),         
+    bst = numeric(length(num_details$pokemon))          
+  )
+  
+  # Function to input all base stats data of pokemon
+  name_to_stat <- function(name, index, df) {
+  
+    # Accessing through name of pokemon
+    helper_url <- str_c("https://pokeapi.co/api/v2/pokemon/", name)
+    helper_response <- GET(helper_url)
+    helper_details <- content(helper_response, "parse")
+  
+    # Index is where the pokemon is within the larger tibble 
+    # Useful when iterating through for loop
+      df$hp[index] <- helper_details$stats[[1]]$base_stat
+      df$atk[index] <- helper_details$stats[[2]]$base_stat
+      df$def[index] <- helper_details$stats[[3]]$base_stat
+      df$spatk[index] <- helper_details$stats[[4]]$base_stat
+      df$spdef[index] <- helper_details$stats[[5]]$base_stat
+      df$spd[index] <- helper_details$stats[[6]]$base_stat
+      df$bst[index] <- df$hp[index][[1]] + df$atk[index][[1]] + df$def[index][[1]] + df$spatk[index][[1]] + df$spdef[index][[1]] + df$spd[index][[1]]
+      
+      return(df)
+    }
+
+  
+  for(i in 1:length(num_details$pokemon)){
+  
+  # If the URL number is greater than 151, this indicates != Kanto
+  # Checks a subset of the string that contains the url data
+    if(as.numeric(str_sub(num_details$pokemon[[i]]$pokemon$url, 35, str_length(num_details$pokemon[[i]]$pokemon$url) - 1)) <= 151)
+      # If it's less than 151, put data in tibble
+{num_data$pokemon[i] <- num_details$pokemon[[i]]$pokemon$name
+   num_data <- name_to_stat(num_data$pokemon[i], i, num_data)
+   num_data$type_name[i] <- num_details$name[1]
+} else 
+  {
+    # Set values to NA 
+  num_data$pokemon[i] <- NA
+  num_data$type_name[i] <- NA
+  num_data <- set_values(i, num_data)
+}
+
+  }
+# Removing NA values
+  num_data |>
+    drop_na()
+}
+```
+
+
+```{r}
+# Iterating through all 18 types, merging into one tibble
+all_types <- list_rbind(map(c(1:18), by_type))
+```
+
+
+```{r}
+# Summary data showing avg. stats per type in Kanto
+mean_all_types <- all_types |>
+  group_by(type_name) |>
+    summarize(
+      mean_atk = mean(atk),
+      mean_spatk = mean(spatk),
+      mean_def = mean(def),
+      mean_spdef = mean(spdef),
+      mean_spd = mean(spd),
+      mean_hp = mean(hp))
+```
+
+
+```{r}
+#csv file for tibble used in question 1
+write_csv(all_types, "all_types.csv")
+write_csv(mean_all_types, "mean_all_types.csv")
 ```
 
